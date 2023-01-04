@@ -25,10 +25,13 @@ impl Parse for MacroInput {
     }
 }
 
-/// Check if the given field is Some(...) or not
+/// Check if given fields are Some(...) or not
+///
 /// If has missing fields, return a Err with the missing fields
+///
 /// If all fields are Some(...), return Ok(())
-/// `has_fields!(self, "name", "email", "password")`
+///
+/// `has_fields!(&mystruct, "field1", "field2", "...")`
 #[proc_macro]
 pub fn has_fields(item: TokenStream) -> TokenStream {
     // First: parse the input
