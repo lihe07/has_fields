@@ -1,67 +1,39 @@
-use proc_macro::{TokenStream};
-use quote::quote;
-use syn::{parse_macro_input};
-use syn::parse::Parse;
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
+pub use macros::*;
 
-struct MacroInput {
-    name: syn::Expr,
-    fields: Punctuated<syn::LitStr, Comma>
+pub trait HasFields {
+    fn num_fields(&self) -> usize;
 }
 
-fn lit_str_parser(input: syn::parse::ParseStream) -> syn::Result<syn::LitStr> {
-    let lit = input.parse::<syn::LitStr>()?;
-    Ok(lit)
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl Parse for MacroInput {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let name = input.parse()?;
-        // Skip the comma
-        input.parse::<Comma>()?;
-        let fields = input.parse_terminated(lit_str_parser)?;
-        Ok(MacroInput { name, fields })
+    #[derive(HasFields)]
+    struct MyForm {
+        _id: u32,
+        name: Option<String>,
+        email: Option<String>,
     }
-}
 
-/// Check if given fields are Some(...) or not
-///
-/// If has missing fields, return a Err with the missing fields
-///
-/// If all fields are Some(...), return Ok(())
-///
-/// `has_fields!(&mystruct, "field1", "field2", "...")`
-#[proc_macro]
-pub fn has_fields(item: TokenStream) -> TokenStream {
-    // First: parse the input
-    let MacroInput { name, fields } = parse_macro_input!(item as MacroInput);
-
-    // Second: generate if-else statements
-    let mut if_elses = quote!();
-    for field in fields {
-        let field_as_ident = syn::Ident::new(&field.value(), field.span());
-        let if_else = quote! {
-            if s.#field_as_ident.is_none() {
-                missing_fields.push(#field);
-            }
+    #[test]
+    fn functional_macros() {
+        let form = MyForm {
+            _id: 1,
+            name: Some("John".to_string()),
+            email: None,
         };
-        if_elses.extend(if_else);
+        assert!(has_fields!(&form, "name"));
+        assert!(require_fields!(&form, "name").is_ok());
+        assert!(require_fields!(form, "name", "email") == Err(vec!["email"]));
     }
 
-    quote! {
-        {
-            let s = #name;
-            let mut missing_fields = Vec::new();
-
-            #if_elses
-
-            if missing_fields.is_empty() {
-                Ok(())
-            } else {
-                Err(missing_fields)
-            }
-        }
-    }.into()
+    #[test]
+    fn derive() {
+        let form = MyForm {
+            _id: 1,
+            name: Some("John".to_string()),
+            email: None,
+        };
+        assert_eq!(form.num_fields(), 2);
+    }
 }
-

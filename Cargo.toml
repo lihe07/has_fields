@@ -1,15 +1,12 @@
 [package]
 name = "has_fields"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["lihe07"]
-description = "A macro to check whether some fields are `Some` or not"
+description = "Some macros helpful for processing forms with optional fields"
+keywords = ["macro", "form", "optional", "field"]
 license = "Unlicense"
 repository = "https://github.com/lihe07/has_fields"
 
-[lib]
-proc-macro = true
-
 [dependencies]
-quote = "1"
-syn = "1"
+macros = { path = "macros" }
